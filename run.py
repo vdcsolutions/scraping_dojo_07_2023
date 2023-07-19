@@ -1,5 +1,5 @@
 from scraper import Scraper
 
-scraper = Scraper()
 
-scraper.main()
+if __name__ == '__main__':
+    Scraper().main()

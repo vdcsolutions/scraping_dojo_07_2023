@@ -7,7 +7,6 @@ import time
 import random
 from typing import List, Dict, Any, Union, Iterator
 from configparser import ConfigParser
-from tqdm import tqdm
 
 config = ConfigParser()
 config_file_path = os.path.join(os.path.dirname(__file__), 'config.ini')
@@ -16,8 +15,10 @@ debug_mode = config.getboolean('DEFAULT', 'debug_mode')
 logger = Logger('%(asctime)s - %(levelname)s - %(message)s', debug=debug_mode)
 
 
+
+
 class Scraper:
-    def __init__(self, config) -> None:
+    def __init__(self) -> None:
         """
         Initialize the Scraper object.
 
@@ -70,6 +71,7 @@ class Scraper:
             self.min_wait_time: float = config.getfloat('DEFAULT', 'min_wait_time')
             self.max_wait_time: float = config.getfloat('DEFAULT', 'max_wait_time')
             self.random_user_agent: bool = config.getboolean('DEFAULT', 'randomize_user_agent')
+            self.restart_without_proxy: bool = config.getboolean('DEFAULT', 'restart_without_proxy')
         except FileNotFoundError as e:
             logger.error(str(e))
             raise FileNotFoundError("'config.ini' file not found.")
@@ -149,14 +151,17 @@ class Scraper:
             ValueError: If an invalid data_type is specified.
         """
 
-        if '[' in data_type:
+        if 'list[' in data_type:
             temp = data_type.split('[')
             data_type = temp[0]
-            slice_start = int(temp[1][0])
+            try:
+                slice_start = int(temp[1][0])
+            except:
+                slice_start = 0
             try:
                 slice_end = int(temp[1][-2])
             except:
-                slice_end = int(-1)
+                slice_end = -1
         if data_type == "string":
             return str(element)
         elif data_type == "list":
@@ -277,14 +282,17 @@ class Scraper:
                 page.goto(self.input_url)
             except Exception as e:
                 logger.error(str(e))
-                logger.info('Could not load page, restarting browser without proxy')
+                logger.info('Could not load page')
                 browser.close()
-
-                try:
+                if self.restart_without_proxy:
+                    logger.info('Initializing browser again without proxy')
                     browser, page = self.initialize_browser_instance(playwright, None)
-                    page.goto(self.input_url)
-                except Exception as e:
-                    logger.error(str(e))
+                    try:
+                        page.goto(self.input_url)
+                    except Exception as e:
+                        logger.error(str(e))
+                        raise
+                else:
                     raise
 
             logger.info('Beginning scraping process')
@@ -304,8 +312,8 @@ class Scraper:
                 logger.error(str(e))
                 page.screenshot(path='screenshot.png', full_page=True)
                 raise
+
             logger.info('Scraping ended. Closing browser and saving results into file')
-            # Close the browser
             browser.close()
 
             # Save the result to the output file as JSON
@@ -316,7 +324,7 @@ class Scraper:
 
 if __name__ == '__main__':
     # Create an instance of the Scraper class
-    scraper = Scraper(config)
+    scraper = Scraper()
 
     # Call the scrape method to start the scraping process
     scraper.main()
