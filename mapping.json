@@ -1,0 +1,22 @@
+{
+  "get": [
+    {
+      "name": "text",
+      "xpath": "//div[@class='quote']/span[@class='text']",
+      "type": "string"
+    },
+    {
+      "name": "by",
+      "xpath": "//div[@class='quote']/span/small[@class='author']",
+      "type": "string"
+    },
+    {
+      "name": "tags",
+      "xpath": "//div[@class='quote']/div[@class='tags']",
+      "type": "list"
+    }
+  ],
+  "paginate" : {
+    "next_page_button_xpath" : "//li[@class='next']/a"
+  }
+}
