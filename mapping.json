@@ -13,7 +13,7 @@
     {
       "name": "tags",
       "xpath": "//div[@class='quote']/div[@class='tags']",
-      "type": "list"
+      "type": "list[1:]"
     }
   ],
   "paginate" : {
