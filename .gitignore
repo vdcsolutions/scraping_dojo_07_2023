@@ -1,0 +1,6 @@
+error.log
+debug.log
+screenshot.png
+venv/
+.idea/
+__pycache__/
