@@ -11,29 +11,9 @@ from fake_useragent import UserAgent
 import sys
 from parser import Parser
 
-config = ConfigParser()
-config_file_path = os.path.join(os.path.dirname(__file__), 'config.ini')
-config.read(config_file_path)
-
-debug_mode = config.getboolean('DEFAULT', 'debug_mode')
-
-env_file = config.get('DEFAULT', 'env_filename')
-
-if '/' in env_file:
-    dotenv_path = env_file
-else:
-    dotenv_path = find_dotenv(env_file)
-
-load_dotenv(dotenv_path)
-
-logger = Logger('%(asctime)s - %(levelname)s - %(message)s', debug=debug_mode)
-
-
-
-
 
 class Scraper:
-    def __init__(self) -> None:
+    def __init__(self, config) -> None:
         """
         Initialize the Scraper object.
 
@@ -57,29 +37,31 @@ class Scraper:
         Raises:
             FileNotFoundError: If 'mapping.json' file is not found or 'config.ini' is not found.
         """
+        self.debug_mode = config.getboolean('DEFAULT', 'debug_mode')
+        self.logger = Logger('%(asctime)s - %(levelname)s - %(message)s', debug=self.debug_mode)
         # Retrieve environment variables
         self.proxy: Optional[str] = os.getenv('PROXY')
         self.input_url: [str] = os.getenv('INPUT_URL')
         self.output_file: [str] = os.getenv('OUTPUT_FILE')
 
         if not self.input_url:
-            logger.error('NO INPUT URL OR OUTPUT FILE IN YOUR .env PLEASE CHECK IT OR USE ABSOLUTE PATH IN CONFIG')
+            self.logger.error('NO INPUT URL OR OUTPUT FILE IN YOUR .env PLEASE CHECK IT OR USE ABSOLUTE PATH IN CONFIG')
             sys.exit()
 
-
+        
         # Log environment variables
-        logger.debug(f"Proxy: {self.proxy}")
-        logger.debug(f"Input URL: {self.input_url}")
-        logger.debug(f"Output File: {self.output_file}")
+        self.logger.debug(f"Proxy: {self.proxy}")
+        self.logger.debug(f"Input URL: {self.input_url}")
+        self.logger.debug(f"Output File: {self.output_file}")
 
         # Load 'mapping.json' file as self.mapping
         mapping_file_path = os.path.join(os.path.dirname(__file__), 'mapping.json')
         try:
             with open(mapping_file_path) as file:
                 self.mapping = json.load(file)
-                logger.debug(f"Mapping.json: {self.mapping}")
+                self.logger.debug(f"Mapping.json: {self.mapping}")
         except FileNotFoundError as e:
-            logger.error(str(e))
+            self.logger.error(str(e))
             raise FileNotFoundError("'mapping.json' file not found.")
 
         # Read configuration from 'config.ini'
@@ -88,7 +70,7 @@ class Scraper:
         self.random_user_agent: bool = config.getboolean('DEFAULT', 'randomize_user_agent')
         self.restart_without_proxy: bool = config.getboolean('DEFAULT', 'restart_without_proxy')
 
-        logger.info('Scraper initialized successfully')
+        self.logger.info('Scraper initialized successfully')
 
     def delayed_click(self, element: Locator) -> None:
         """
@@ -102,11 +84,11 @@ class Scraper:
         """
         if element.is_visible():
             wait_time = round(random.uniform(self.min_wait_time, self.max_wait_time), 2)
-            logger.info(f"Waiting for {wait_time} seconds")
+            self.logger.info(f"Waiting for {wait_time} seconds")
             time.sleep(wait_time)
             element.click()
         else:
-            logger.error("Element not visible. Click action timed out.")
+            self.logger.error("Element not visible. Click action timed out.")
             raise TimeoutError("Element not visible. Click action timed out.")
 
     def scrape_data_from_page(self, page: Page) -> Dict[str, List[Any]]:
@@ -171,19 +153,19 @@ class Scraper:
             BrowserContext: The initialized Playwright BrowserContext instance.
         """
         if proxy:
-            logger.info(f'Proxy: {proxy}')
+            self.logger.info(f'Proxy: {proxy}')
             proxy = {'server': proxy}
         else:
             proxy = None
-        browser = playwright.chromium.launch(proxy=proxy, headless=not debug_mode)
+        browser = playwright.chromium.launch(proxy=proxy, headless=not self.debug_mode)
 
         if self.random_user_agent:
             user_agent = UserAgent().random
             browser.new_context(
                 user_agent=user_agent
             )
-            logger.info(f'User agent: {user_agent}')
-        logger.info("Browser initialized succesfully")
+            self.logger.info(f'User agent: {user_agent}')
+        self.logger.info("Browser initialized succesfully")
         return browser, browser.new_page()
 
     def main(self) -> None:
@@ -200,26 +182,26 @@ class Scraper:
         with sync_playwright() as playwright:
             result: List[Dict[str, Any]] = []
 
-            logger.info('Initializing browser')
+            self.logger.info('Initializing browser')
             browser, page = self.initialize_browser_instance(playwright, self.proxy)
 
             try:
                 page.goto(self.input_url)
             except Exception as e:
-                logger.error(str(e))
+                self.logger.error(str(e))
                 browser.close()
                 if self.restart_without_proxy:
-                    logger.info('Initializing browser again without proxy')
+                    self.logger.info('Initializing browser again without proxy')
                     browser, page = self.initialize_browser_instance(playwright, None)
                     try:
                         page.goto(self.input_url)
                     except Exception as e:
-                        logger.error(str(e))
+                        self.logger.error(str(e))
                         raise
                 else:
                     raise
 
-            logger.info('Beginning scraping process')
+            self.logger.info('Beginning scraping process')
 
             page_number = 0
             try:
@@ -227,9 +209,9 @@ class Scraper:
                     page_number += 1
                     scraped_data = Parser.dict_with_lists_to_list_of_dicts(scraped_data)
                     result.extend(scraped_data)
-                    logger.info(f"Page number {page_number} scraped successfully")
+                    self.logger.info(f"Page number {page_number} scraped successfully")
             except Exception as e:
-                logger.error(str(e))
+                self.logger.error(str(e))
                 page.screenshot(path='screenshot.png', full_page=True)
                 raise
 
@@ -238,9 +220,22 @@ class Scraper:
         with open(self.output_file, 'w') as file:
             json.dump(result, file)
 
-        logger.info(f'Result saved as {self.output_file}')
+        self.logger.info(f'Result saved as {self.output_file}')
 
 
 if __name__ == '__main__':
-    scraper = Scraper()
+    config = ConfigParser()
+    config_file_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+    config.read(config_file_path)
+
+    env_file = config.get('DEFAULT', 'env_filename')
+
+    if '/' in env_file:
+        dotenv_path = env_file
+    else:
+        dotenv_path = find_dotenv(env_file)
+
+    load_dotenv(dotenv_path)
+
+    scraper = Scraper(config)
     scraper.main()
