@@ -1,5 +1,5 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from log import Logger
 import json
 from playwright.sync_api import sync_playwright, Page, Locator
@@ -13,6 +13,7 @@ config_file_path = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file_path)
 debug_mode = config.getboolean('DEFAULT', 'debug_mode')
 logger = Logger('%(asctime)s - %(levelname)s - %(message)s', debug=debug_mode)
+load_dotenv(find_dotenv(config.get('DEFAULT', 'env_filename')))
 
 
 
@@ -42,14 +43,10 @@ class Scraper:
         Raises:
             FileNotFoundError: If 'mapping.json' file is not found or 'config.ini' is not found.
         """
-        # Load environment variables from the 'sigmoidal.env' file in the 'venv' directory
-        dotenv_path = os.path.join(os.path.dirname(__file__), 'venv', 'sigmoidal.env')
-        load_dotenv(dotenv_path)
-
         # Retrieve environment variables
         self.proxy: Optional[str] = os.getenv('PROXY')
-        self.input_url: Optional[str] = os.getenv('INPUT_URL')
-        self.output_file: Optional[str] = os.getenv('OUTPUT_FILE')
+        self.input_url: [str] = os.getenv('INPUT_URL')
+        self.output_file: [str] = os.getenv('OUTPUT_FILE')
 
         # Log environment variables
         logger.debug(f"Proxy: {self.proxy}")
@@ -67,14 +64,11 @@ class Scraper:
             raise FileNotFoundError("'mapping.json' file not found.")
 
         # Read configuration from 'config.ini'
-        try:
-            self.min_wait_time: float = config.getfloat('DEFAULT', 'min_wait_time')
-            self.max_wait_time: float = config.getfloat('DEFAULT', 'max_wait_time')
-            self.random_user_agent: bool = config.getboolean('DEFAULT', 'randomize_user_agent')
-            self.restart_without_proxy: bool = config.getboolean('DEFAULT', 'restart_without_proxy')
-        except FileNotFoundError as e:
-            logger.error(str(e))
-            raise FileNotFoundError("'config.ini' file not found.")
+        self.min_wait_time: float = config.getfloat('DEFAULT', 'min_wait_time')
+        self.max_wait_time: float = config.getfloat('DEFAULT', 'max_wait_time')
+        self.random_user_agent: bool = config.getboolean('DEFAULT', 'randomize_user_agent')
+        self.restart_without_proxy: bool = config.getboolean('DEFAULT', 'restart_without_proxy')
+
         logger.info('Scraper initialized successfully')
 
     def delayed_click(self, element: Locator) -> None:
@@ -282,7 +276,6 @@ class Scraper:
                 page.goto(self.input_url)
             except Exception as e:
                 logger.error(str(e))
-                logger.info('Could not load page')
                 browser.close()
                 if self.restart_without_proxy:
                     logger.info('Initializing browser again without proxy')
@@ -303,7 +296,6 @@ class Scraper:
                 for scraped_data in self.scrape_data_from_all_pages(page):
                     page_number += 1
                     scraped_data = self.parse_scraped_data(scraped_data)
-                    logger.debug(scraped_data)
                     result.extend(scraped_data)
                     logger.info(f"Page number {page_number} scraped successfully")
             except Exception as e:
