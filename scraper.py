@@ -7,13 +7,26 @@ import time
 import random
 from typing import List, Dict, Any, Union, Iterator
 from configparser import ConfigParser
+from fake_useragent import UserAgent
+import sys
 
 config = ConfigParser()
 config_file_path = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file_path)
+
 debug_mode = config.getboolean('DEFAULT', 'debug_mode')
+
+env_file = config.get('DEFAULT', 'env_filename')
+
+if '/' in env_file:
+    dotenv_path = env_file
+else:
+    dotenv_path = find_dotenv(env_file)
+
+load_dotenv(dotenv_path)
+
 logger = Logger('%(asctime)s - %(levelname)s - %(message)s', debug=debug_mode)
-load_dotenv(find_dotenv(config.get('DEFAULT', 'env_filename')))
+
 
 
 
@@ -48,6 +61,11 @@ class Scraper:
         self.input_url: [str] = os.getenv('INPUT_URL')
         self.output_file: [str] = os.getenv('OUTPUT_FILE')
 
+        if not self.input_url:
+            logger.error('NO INPUT URL OR OUTPUT FILE IN YOUR .env PLEASE CHECK IT OR USE ABSOLUTE PATH IN CONFIG')
+            sys.exit()
+
+
         # Log environment variables
         logger.debug(f"Proxy: {self.proxy}")
         logger.debug(f"Input URL: {self.input_url}")
@@ -81,8 +99,6 @@ class Scraper:
         Raises:
             TimeoutError: If the element does not become visible within the specified time range.
         """
-        # Calculate the wait time for tqdm progress bar
-
         if element.is_visible():
             wait_time = round(random.uniform(self.min_wait_time, self.max_wait_time), 2)
             logger.info(f"Waiting for {wait_time} seconds")
@@ -105,22 +121,18 @@ class Scraper:
         """
         scraped_data = {}
 
-        # Iterate over each item in the mapping and scrape the data
         for item in self.mapping['get']:
             name = item['name']
             xpath = item['xpath']
             element_type = item['type']
 
-            # Wait for the element to appear on the page
             page.wait_for_selector(xpath)
 
-            # Extract the elements based on the given XPath
             elements = page.query_selector_all(xpath)
             if elements:
-                # Validate and process the elements based on their data types
                 values = [self.validate_element(element_type, element.inner_text()) for element in elements]
                 scraped_data[name] = values
-        # Return the parsed and scraped data
+
         return scraped_data
 
     def validate_element(self, data_type: str, element: str) -> Union[str, List[str]]:
@@ -190,7 +202,6 @@ class Scraper:
                 if i < len(result):
                     result[i].update({key: element})
                 else:
-                    # If the result list is not large enough, create a new dictionary and append it
                     result.append({key: element})
 
         return result
@@ -208,22 +219,15 @@ class Scraper:
                                             The keys represent the data names, and the values are lists of scraped data.
                                             The iterator will stop when there are no more visible next pages to scrape.
         """
-        next_page_button = page.locator("xpath=" + self.mapping['paginate']['next_page_button_xpath'])
-        n = 1
-
-        # Scrape data from the initial page
         scraped_data = self.scrape_data_from_page(page)
         yield scraped_data
 
-        # Iterate over subsequent pages using pagination
+        next_page_button = page.locator("xpath=" + self.mapping['paginate']['next_page_button_xpath'])
         while next_page_button.is_visible():
-            n += 1
             self.delayed_click(next_page_button)
-            # Scrape data from the current page
             scraped_data = self.scrape_data_from_page(page)
             yield scraped_data
 
-            # Update the 'next_page_button' locator for the next iteration
             next_page_button = page.locator("xpath=" + self.mapping['paginate']['next_page_button_xpath'])
 
     def initialize_browser_instance(self, playwright, proxy):
@@ -242,14 +246,13 @@ class Scraper:
         else:
             proxy = None
         browser = playwright.chromium.launch(proxy=proxy, headless=not debug_mode)
-        # Set random user agent option if needed
+
         if self.random_user_agent:
-            from fake_useragent import UserAgent
-            random_ua = UserAgent().random
+            user_agent = UserAgent().random
             browser.new_context(
-                user_agent=random_ua
+                user_agent=user_agent
             )
-            logger.info(f'User agent: {random_ua}')
+            logger.info(f'User agent: {user_agent}')
         logger.info("Browser initialized succesfully")
         return browser, browser.new_page()
 
@@ -265,8 +268,6 @@ class Scraper:
             Exception: If an error occurs during the scraping process.
         """
         with sync_playwright() as playwright:
-
-            # Create an empty list to store the final result
             result: List[Dict[str, Any]] = []
 
             logger.info('Initializing browser')
@@ -290,33 +291,26 @@ class Scraper:
 
             logger.info('Beginning scraping process')
 
+            page_number = 0
             try:
-                # Scrape data from all pages using pagination
-                page_number = 0
                 for scraped_data in self.scrape_data_from_all_pages(page):
                     page_number += 1
                     scraped_data = self.parse_scraped_data(scraped_data)
                     result.extend(scraped_data)
                     logger.info(f"Page number {page_number} scraped successfully")
             except Exception as e:
-                # If an error occurs during the scraping process, take a screenshot
-                # and log the error message
                 logger.error(str(e))
                 page.screenshot(path='screenshot.png', full_page=True)
                 raise
 
-            logger.info('Scraping ended. Closing browser and saving results into file')
             browser.close()
 
-            # Save the result to the output file as JSON
         with open(self.output_file, 'w') as file:
             json.dump(result, file)
-            logger.info(f'Result saved as {self.output_file}')
+
+        logger.info(f'Result saved as {self.output_file}')
 
 
 if __name__ == '__main__':
-    # Create an instance of the Scraper class
     scraper = Scraper()
-
-    # Call the scrape method to start the scraping process
     scraper.main()
