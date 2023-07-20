@@ -9,16 +9,17 @@ from fake_useragent import UserAgent
 from parser import Parser
 from log import logger
 
+
 class Scraper:
     def __init__(
-        self,
-        debug_mode: bool,
-        start_url: str,
-        proxy: str,
-        output_file: str,
-        mapping_file: Dict,
-        wait_time: List,
-        random_user_agent: bool,
+            self,
+            debug_mode: bool,
+            start_url: str,
+            proxy: str,
+            output_file: str,
+            mapping_file: Dict,
+            wait_time: List,
+            random_user_agent: bool,
     ) -> None:
         """
         Initialize the Scraper object.
