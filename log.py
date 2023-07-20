@@ -2,7 +2,7 @@ import logging
 
 
 class Logger:
-    def __init__(self, format: str, debug: bool = False) -> None:
+    def __init__(self, format: str) -> None:
         """
         Initialize the Logger instance. Set console logs for all levels and saves errors to errors.log
 
@@ -16,23 +16,26 @@ class Logger:
         console_handler.setFormatter(self.formatter)
         self.logger.addHandler(console_handler)
 
-        if debug:
-            self.logger.setLevel(logging.DEBUG)
-            console_handler.setLevel(logging.DEBUG)
 
-            debug_file_handler = logging.FileHandler('debug.log')
-            debug_file_handler.setLevel(logging.DEBUG)
-            debug_file_handler.setFormatter(self.formatter)
-            self.logger.addHandler(debug_file_handler)
-            self.logger.debug('RUNNING IN DEBUG MODE')
-        else:
-            self.logger.setLevel(logging.INFO)
-            console_handler.setLevel(logging.INFO)
+
+        self.logger.setLevel(logging.INFO)
+        console_handler.setLevel(logging.INFO)
 
         error_file_handler = logging.FileHandler('error.log')
         error_file_handler.setLevel(logging.ERROR)
         error_file_handler.setFormatter(self.formatter)
         self.logger.addHandler(error_file_handler)
+
+
+    def enable_debug_mode(self, console_hander):
+        self.logger.setLevel(logging.DEBUG)
+        console_handler.setLevel(logging.DEBUG)
+
+        debug_file_handler = logging.FileHandler('debug.log')
+        debug_file_handler.setLevel(logging.DEBUG)
+        debug_file_handler.setFormatter(self.formatter)
+        self.logger.addHandler(debug_file_handler)
+        self.logger.debug('RUNNING IN DEBUG MODE')
 
     def debug(self, message: str) -> None:
         """
@@ -60,3 +63,5 @@ class Logger:
             message (str): The message to be logged.
         """
         self.logger.info(message)
+
+logger = Logger('%(asctime)s - %(levelname)s - %(message)s')

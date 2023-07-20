@@ -1,5 +1,5 @@
 {
-  "get": [
+  "scrape": [
     {
       "name": "text",
       "xpath": "//div[@class='quote']/span[@class='text']",
@@ -16,7 +16,7 @@
       "type": "list[1:]"
     }
   ],
-  "paginate" : {
+  "pagination" : {
     "next_page_button_xpath" : "//li[@class='next']/a"
   }
 }
