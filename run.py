@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, Dict
 from dotenv import load_dotenv, find_dotenv
 from configparser import ConfigParser
 from scraper import Scraper

@@ -1,0 +1,20 @@
+2023-07-20 10:25:11,964 - DEBUG - RUNNING IN DEBUG MODE
+2023-07-20 10:25:12,150 - INFO - Initializing browser
+2023-07-20 10:25:12,527 - INFO - User agent: Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0
+2023-07-20 10:25:12,527 - INFO - Browser initialized succesfully
+2023-07-20 10:25:14,689 - INFO - Beginning scraping process
+2023-07-20 10:25:24,279 - INFO - Page number 1 scraped successfully
+2023-07-20 10:25:24,284 - INFO - Waiting for 4.31 seconds
+2023-07-20 10:25:39,648 - INFO - Page number 2 scraped successfully
+2023-07-20 10:25:39,652 - INFO - Waiting for 7.21 seconds
+2023-07-20 10:26:48,668 - DEBUG - RUNNING IN DEBUG MODE
+2023-07-20 10:26:48,850 - INFO - Initializing browser
+2023-07-20 10:26:49,088 - INFO - User agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.1) Gecko/20061205 Firefox/2.0.0.1
+2023-07-20 10:26:49,088 - INFO - Browser initialized succesfully
+2023-07-20 10:26:51,134 - INFO - Beginning scraping process
+2023-07-20 10:27:00,801 - INFO - Page number 1 scraped successfully
+2023-07-20 10:27:00,806 - INFO - Waiting for 5.39 seconds
+2023-07-20 10:27:17,295 - INFO - Page number 2 scraped successfully
+2023-07-20 10:27:17,300 - INFO - Waiting for 6.0 seconds
+2023-07-20 10:27:34,447 - INFO - Page number 3 scraped successfully
+2023-07-20 10:27:34,451 - INFO - Waiting for 4.78 seconds

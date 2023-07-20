@@ -11,15 +11,13 @@ class Logger:
             debug (bool, optional): If True, enables debug mode and logs to 'debug.log'.
         """
         self.logger = logging.getLogger(__name__)
-        console_handler = logging.StreamHandler()
+
+        self.console_handler = logging.StreamHandler()
         self.formatter = logging.Formatter(format)
-        console_handler.setFormatter(self.formatter)
-        self.logger.addHandler(console_handler)
-
-
-
+        self.console_handler.setFormatter(self.formatter)
+        self.logger.addHandler(self.console_handler)
         self.logger.setLevel(logging.INFO)
-        console_handler.setLevel(logging.INFO)
+        self.console_handler.setLevel(logging.INFO)
 
         error_file_handler = logging.FileHandler('error.log')
         error_file_handler.setLevel(logging.ERROR)
@@ -27,9 +25,9 @@ class Logger:
         self.logger.addHandler(error_file_handler)
 
 
-    def enable_debug_mode(self, console_hander):
+    def enable_debug_mode(self):
         self.logger.setLevel(logging.DEBUG)
-        console_handler.setLevel(logging.DEBUG)
+        self.console_handler.setLevel(logging.DEBUG)
 
         debug_file_handler = logging.FileHandler('debug.log')
         debug_file_handler.setLevel(logging.DEBUG)

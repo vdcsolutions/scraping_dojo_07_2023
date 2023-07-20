@@ -16,7 +16,7 @@ class Scraper:
         start_url: str,
         proxy: str,
         output_file: str,
-        mapping_file: str,
+        mapping_file: Dict,
         wait_time: List,
         random_user_agent: bool,
     ) -> None:
@@ -41,6 +41,8 @@ class Scraper:
         self.output_file = output_file
         self.wait_time = wait_time
         self.random_user_agent = random_user_agent
+        if debug_mode:
+            logger.enable_debug_mode()
 
     def delayed_click(self, element: Locator) -> None:
         """
