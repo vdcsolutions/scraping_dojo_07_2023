@@ -4,3 +4,4 @@ screenshot.png
 venv/
 .idea/
 __pycache__/
+.gitignore
